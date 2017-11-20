@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>直接跳转内容列表模板</title>
+
+<script src="/templatefile/common_res/jquery/jquery.min.js"></script>
+<script>
+
+function initContent(){
+	$.ajax({
+		url : '/Portal/portal/template/getTemplate'+window.location.search,
+		type : 'POST',
+		dataType : 'json',
+		contentType : "application/json",
+		async : false,
+		success : function(data) {			
+			data =eval(data)[0];
+			if(data.page[0]&&data.page[0].first){     //判断data.page[0].first   存在则跳转至详情页
+				location.replace(data.sources[0].source_src);
+				return false;
+			}
+		},
+		error : function(e) {
+			console.log(e);
+		}
+	});
+}
+
+$(document).ready(function(){
+	initContent();
+});
+</script>
+</head>
+<body>
+</body>
+</html>

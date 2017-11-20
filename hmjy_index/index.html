@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>华美家园-首页</title>
+    <style>
+        *{
+            margin: 0px;
+            padding: 0px;
+            border: 0px;
+            list-style-type: none;
+            box-sizing:border-box;
+        }
+        body{
+            background-image: url(img/bg.png);
+            width: 1280px;
+            height: 760px;
+            overflow: hidden;
+            background-repeat: no-repeat;
+        }
+        .content{
+            width: 1150px;
+            height: 436px;
+            margin: 150px auto 0px;
+        }
+        .content .li{
+            margin-left:10px;
+            width: 200px;
+            height: 200px;
+            overflow: hidden;
+            float: left;
+            border: 8px solid transparent;
+            border-radius: 35px;
+        }
+        .content .li.h{
+            border: 8px solid #FFC107;
+            box-shadow: 0 0px 25px #000;
+        }
+        .content .li:first-child{
+            width: 510px;
+            height: 390px;
+            border-radius: 60px;
+            float:left;
+        }
+        .content .li img{
+            width: 100%;
+            height: auto;
+        }
+    </style>
+    <script src="/templatefile/common_res/arttemplate/template-native.js"></script>
+    <script src="/templatefile/common_res/jquery/jquery.min.js"></script>
+    <script src="http://sc0.lcbtn.com/ntp/"></script>
+    <script type="text/javascript">
+        var subPos = 0;//序号
+        var subPosNum; //栏目总数
+        var gotoNum;
+        sessionStorage.referUrl = window.location.href;
+        document.onirkeypress = grabEvent;
+        document.onkeydown = grabEvent;
+        function grabEvent(event){
+            var keyval = event.which;
+            switch(keyval){
+                case 37://left
+                    changLR(-1);
+                    return false;
+                    break;
+                case 39://right
+                    changLR(1);
+                    return false;
+                    break;
+                case 38://up
+                    changUP(-1);
+                    return false;
+                    break;
+                case 40://down
+                    changUP(1);
+                    return false;
+                    break;
+                case 13://确认
+                    doSelect();
+                    return false;
+                    break;
+                case 8://back
+                case 27://esc
+                    gotoMenu();
+                    return false;
+                    break;
+                case 52: //4
+                    window.location.href = "../../5717/index/index.html";
+                    return false;
+                    break;
+            }
+            return true;
+        }
+        //键盘操作end
+        function gotoMenu(){
+            window.location.href=iSTB.browser.gotoSTB('menu');
+        }
+        //获取焦点，加载对应的子页面
+        function getPos(){
+            $(".content .li").removeClass("h");
+            $(".content .li:eq("+subPos+")").addClass("h");
+        }
+        function changLR(num){
+            if(subPos==4&&num<0){
+                subPos = 0;
+                getPos();
+            }else if((subPos+num)>=0&&(subPos+num)<subPosNum){
+                subPos+=num;
+                getPos();
+            }
+        }
+
+        function changUP(num){
+            if(subPos==0){
+                return false;
+            }else if((subPos>0&&subPos<4&&num>0)||(subPos>=4&&subPos<=subPosNum&&num<0)){
+                subPos+=num*3;
+                getPos();
+            }
+        }
+        function doSelect(){
+            sessionStorage.subPos = subPos;
+            var theurl = $(".content .li:eq("+subPos+")").attr("theUrl");
+            if(gotoNum){
+                for(i=0,l=gotoNum.length;i<l;i++){
+                    if(subPos==gotoNum[i]){
+                        var theurl = theurl.split("?")[1];
+                        getJump(theurl);
+                        return false;
+                    }
+                }
+            }
+            window.location.href = theurl;
+        }
+        function getJump(url){
+            $.ajax({
+                url : '/Portal/portal/template/getTemplate?'+url,
+                type: 'POST',
+                data: null,
+                async : false,
+                success : function(data) {
+                    data =eval(data)[0];
+                    window.location.href = data.page[0].goto;
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+        }
+        //地区接口
+        $(document).ready(function(){
+            //initMenu();
+            if(getBrowserType() == "Inspur"){sc_time+=28800000}
+            //caId = iSTB.settings.get("sys:ca0:cardnumber");
+            caId='hmjy';
+            $.ajax({
+                url : '/Portal/portal/template/getRegion1?appType=8&caCard='+caId,
+                type: 'POST',
+                data: null,
+                async : false,
+                success : function(data) {
+                    data =eval(data)[0];
+                    //alert("data_1:" + data);
+                    getUrl(data.page_url);
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+            initTime();
+        });
+        function getUrl(_url){
+            $.ajax({
+                url : '/Portal/portal/template/getTemplate?'+_url,
+                type: 'POST',
+                data: null,
+                async : false,
+                success : function(data) {
+                    data =eval(data)[0];
+                    //alert("data_2:" + data);
+                    var html = template('template', data);
+                    html = replaceStr(html);
+                    if(data.page[0]&&data.page[0].jump){
+                        gotoNum = eval(data.page[0].jump);
+                    }
+                    $("#lifecirclebody").html(html);
+                    subPosNum = $(".content .li").length;
+                    if(sessionStorage.subPos){
+                        subPos = sessionStorage.subPos*1;
+                        delete sessionStorage.subPos;
+                    }
+                    $(".content .li:eq("+subPos+")").addClass("h");
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+        }
+        function replaceStr(str){
+            var html = '';
+            html=str.replace(/&#60;/g, "<");
+            html =html.replace(/&#62;/g, ">");
+            html =html.replace(/&#160;/g, "");
+            html =html.replace(/&#38;/g, "&");
+            html =html.replace(/&#34;/g, "\"");
+            html =html.replace(/&#39;/g, "'");
+            html =html.replace(/&#215;/g, "x");
+            html =html.replace(/&#247;/g, "/");
+            return html;
+        }
+        //获取浏览器版本
+        function getBrowserType(){
+            var ua = navigator.userAgent.toLowerCase();
+            return /ipanel/.test(ua) ? 'iPanel'
+                : /enrich/.test(ua) ? 'EVM'
+                    : /wobox/.test(ua) ? 'Inspur'
+                        : window.ActiveXObject ? 'IE'
+                            : document.getBoxObjectFor || /firefox/.test(ua) ? 'FireFox'
+                                : window.openDatabase && !/chrome/.test(ua) ? 'Safari'
+                                    : /opr/.test(ua) ? 'Opera'
+                                        : window.MessageEvent && !document.getBoxObjectFor ? 'Chrome'
+                                            : ''
+                ;
+        }
+        function initTime(){
+            var d = new Date(sc_time);
+            var theMonth = d.getMonth()+1;
+            theMonth = check(theMonth);
+            var theDay = d.getDate();
+            theDay = check(theDay);
+            var year = d.getFullYear()
+            var theDay=year+"/"+theMonth+"/"+theDay;
+            $("#rq").html(theDay);
+            var weeks=["日","一","二","三","四","五","六"];
+            week = weeks[d.getDay()];
+            week="星期"+week;
+            $("#xq").html(week);
+            var th = d.getHours();
+            th = check(th);
+            var tm = d.getMinutes();
+            tm = check(tm);
+            theTime = th+":"+tm;
+            $("#sj").html(theTime);
+            function check(i){
+                if(i<10){
+                    i = "0"+i;
+                }
+                return i;
+            }
+            setTimeout(function(){sc_time+=60000;initTime();},60000);
+        }
+        function gotoOther(url){
+            window.location.href = url;
+        }
+    </script>
+</head>
+<body>
+<div class="content" id="lifecirclebody">
+    <script id="template" type="text/html">
+        <% for(i=0,l=categorys.length;i<l&&i<7;i++){%>
+        <div class="li" theUrl="<%=categorys[i].category_src%>">
+            <img src="<%=categorys[i].category_img%>"/>
+        </div>
+        <%}%>
+    </script>
+</div>
+</body>
+<script src="http://tj.lcbtn.com/?u=1"></script>
+</html>

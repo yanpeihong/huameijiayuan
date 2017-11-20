@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>文章列表模板</title>
+    <style>
+        *{
+            margin:0px;
+            padding:0px;
+            border:0px;
+            box-sizing:border-box;
+        }
+        body{
+            width:1280px;
+            height:720px;
+            overflow:hidden;
+            background-color:#000;
+            background-repeat:no-repeat;
+            position:relative;
+        }
+        .title{
+            font-family:Arial, Helvetica, sans-serif;
+            font-weight:bold;
+            font-size:20px;
+            text-align:center;
+            color:#FFF;
+            line-height:30px;
+        }
+        .content{
+            width:1140px;
+            height:530px;
+            margin:100px 0px 0px 65px;
+            /*background-image:url(images/bg.jpg);*/
+            background-repeat:no-repeat;
+            padding-top:20px;
+            float:left;
+        }
+        .listDiv{
+            height: 51px;
+            width: 1034px;
+            float: left;
+            margin: 0px 0px 11px 52px;
+            box-shadow: 0px 2px 2px #999;
+            border-radius: 6px;
+            border: 1px #757575 solid;
+            font-size: 24px;
+            line-height: 51px;
+            padding: 0px 170px 0px 40px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+        .listDiv span{
+            font-size: 23px;
+            right: 20px;
+            position: absolute;
+            overflow: hidden;
+            width: 120px;
+            text-align: left;
+            font-family:Arial, Helvetica, sans-serif;
+        }
+        .listDiv_h{
+            background-color:#F6C83F;
+            color:#FFFFFF;
+        }
+        .listDiv .pic{
+            width:289px;
+            height:168px;
+        }
+        .listDiv .pic img{
+            width:290px;
+            height:168px;
+        }
+        .listDiv .title{
+            height:36px;
+            width:100%;
+            line-height:36px;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        .scroll{
+            width: 6px;
+            background-color: #bbb;
+            height: 480px;
+            position: absolute;
+            right: 110px;
+            top: 120px;
+            border-radius: 10px;
+            display: none;
+        }
+        .anchor{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            background-color: #FF9B00;
+            border-radius: 10px;
+        }
+
+    </style>
+    <script type="text/javascript" src="/templatefile/common_res/arttemplate/template-native.js"></script>
+    <script type="text/javascript" src="/templatefile/common_res/jquery/jquery.min.js"></script>
+    <script language="javascript">
+        var columnPos = 0;
+        var subNum = 8;
+        var pageNum = 1;
+        var totalNum;
+
+        document.onirkeypress = grabEvent;
+        document.onkeydown = grabEvent;
+        function grabEvent(event){
+            var keyval = event.which;
+            switch(keyval){
+                case 1:
+                case 38://up
+                    changeFocus(-1);
+                    return false;
+                    break;
+                case 2:
+                case 40://down
+                    changeFocus(1);
+                    return false;
+                    break;
+                case 13:
+                    doSelect();
+                    return false;
+                    break;
+                case 339:
+                case 27://esc
+                    return false;
+                    break;
+                case 340:
+                case 8:
+                    back();
+                    return false;
+                    break;
+            }
+        }
+
+        function setFocus(){
+            if(sessionStorage.columnPos){
+                columnPos = parseInt(sessionStorage.columnPos,"10");
+                delete sessionStorage.columnPos;
+            }
+            $(".content .listDiv:eq("+columnPos+")").addClass("listDiv_h");
+        }
+
+        function back(){
+            if(sessionStorage.categorys2){
+                window.location.href = sessionStorage.categorys2;
+                delete sessionStorage.categorys2;
+            }else if(sessionStorage.categorys1){
+                window.location.href = sessionStorage.categorys1;
+                delete sessionStorage.categorys1;
+            }else if(sessionStorage.categorys){
+                window.location.href = sessionStorage.categorys;
+                delete sessionStorage.categorys;
+            }else if(sessionStorage.categorys_lgg){
+                window.location.href = sessionStorage.categorys_lgg;
+                delete sessionStorage.categorys_lgg;
+            }else if(sessionStorage.referUrl){
+                window.location.href = sessionStorage.referUrl;
+            }else{
+                history.back();
+            }
+        }
+        function changeFocus(_num){
+            if((columnPos+_num)==subNum&&totalNum>subNum&&pageNum*subNum<totalNum){
+                columnPos=0;
+                initContent(subNum,++pageNum);
+                setFocus();
+                scrool();
+            }else if((columnPos+_num)==-1&&pageNum>1){
+                columnPos=subNum-1;
+                initContent(subNum,--pageNum);
+            }else if((columnPos+_num)>=0&&(columnPos+_num)<$(".content .listDiv").length){
+                $(".content .listDiv:eq("+columnPos+")").removeClass("listDiv_h");
+                columnPos+=_num;
+                setFocus();
+            }
+        }
+
+        function doSelect(){
+            sessionStorage.columnPos = columnPos;
+            sessionStorage.pageNum = pageNum;
+            var theUrl = $(".content .listDiv:eq("+columnPos+")").attr("data_url");
+            window.location.href = theUrl;
+        }
+        //请求数据接口
+        function initContent(datasize,pageNum){
+            $.ajax({
+                url : '/Portal/portal/template/getTemplate'+window.location.search+"&datasize="+datasize+"&pageNum="+pageNum,
+                type : 'POST',
+                dataType : 'json',
+                contentType : "application/json",
+                async : false,
+                success : function(data) {
+                    data =eval(data)[0];
+                    totalNum = data.totalNum;
+                    var html = template('template', data);
+                    html = replaceStr(html);
+                    document.getElementById('lifecirclebody').innerHTML = html;
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+            scrool();
+        }
+
+        function replaceStr(str){
+            var html = '';
+            html=str.replace(/&#60;/g, "<");
+            html =html.replace(/&#62;/g, ">");
+            html =html.replace(/&#160;/g, "");
+            html =html.replace(/&#38;/g, "&");
+            html =html.replace(/&#34;/g, "\"");
+            html =html.replace(/&#39;/g, "'");
+            html =html.replace(/&#215;/g, "x");
+            html =html.replace(/&#247;/g, "/");
+            return html;
+        }
+        function scrool(){
+            if(totalNum>subNum){
+                $(".scroll").show();
+                var theheight = $(".scroll").height();
+                hheight = 1/(Math.ceil(totalNum/subNum))*theheight;
+                var anchor_ = $(".anchor");
+                anchor_.height(hheight);
+                anchor_.css("top",hheight*(pageNum-1));
+            }
+        }
+        $(document).ready(function(){
+            if(typeof(sessionStorage.pageNum)!="undefined"){pageNum=parseInt(sessionStorage.pageNum); delete sessionStorage.pageNum};
+            initContent(subNum,pageNum);
+        });
+        function scrool(){
+            if(totalNum>subNum){
+                $(".scroll").show();
+                var theheight = $(".scroll").height();
+                hheight = 1/(Math.ceil(totalNum/subNum))*theheight;
+                var anchor_ = $(".anchor");
+                anchor_.height(hheight);
+                anchor_.css("top",hheight*(pageNum-1));
+            }
+            setFocus();
+        }
+
+    </script>
+</head>
+<body  background="images/bg.png" leftmargin="0" topmargin="0">
+<div id="lifecirclebody">
+    <script id="template" type="text/html">
+        <!--<div style=" left:50px; top:30px; position:absolute;width:164px; height:46px; background-image:url(images/logo_0.png)"></div>
+        <div style=" left:228px; top:35px; position:absolute;width:107px; height:35px; background-image:url(images/logo_1.png)"></div>-->
+        <!--栏目标题-->
+        <% if(page[0]!=undefined&&page[0].image!=undefined){%>
+        <div style=" left:370px; top:30px; position:absolute;width:400px; height:50px;">
+            <img src="<%=page[0].image%>"/>
+        </div>
+        <%}%>
+        <!--6格展框-->
+        <div class="content">
+            <%if(sources.length==0){%>
+            <div style="font-size: 32px;height: 50px;width: 150px; margin: 200px auto;">暂无资源</div>
+            <%}else{%>
+            <% for (i=0, l=sources.length; i<l&&i<8; i++) { %>
+            <div class="listDiv" data_url="<%=sources[i].source_src%>"><%=sources[i].source_title%>
+                <%if(sources[i].create_at){%>
+                <span style=""><%=sources[i].create_at%></span>
+                <%}else if(sources[i].source_time){%>
+                <span style=""><%=sources[i].source_time%></span>
+                <%}%>
+            </div>
+            <%}%>
+            <%}%>
+    </script>
+</div>
+<div class="scroll">
+    <div class="anchor"></div>
+</div>
+</body>
+<script src="http://tj.lcbtn.com/?u=1"></script>
+</html>

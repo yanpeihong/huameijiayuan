@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>分类模版-左右嵌入式</title>
+	<style>
+		*{
+			margin:0px;
+			padding:0px;
+			border:0px;
+			box-sizing:border-box;
+		}
+		body{
+			background-image:url(images/bg.png);
+			background-repeat:no-repeat;
+			width:1280px;
+			height:720px;
+			overflow:hidden;
+			background-color:#000;
+		}
+		.left{
+			margin:100px 0px 0px 0px;
+			width: 209px;
+			height: 548px;
+			position:relative;
+			float:left;
+		}
+		.col{
+			margin:44px 0px 44px 25px;
+			padding-top:18px;
+			width: 239px;
+			height: 468px;
+			float:left;
+		}
+		.li{
+			width:150px;
+			height:55px;
+			margin:0px 10px 10px 8px;
+			border: transparent solid 1px;
+			border-radius:9px;
+			background:rgba(100,100,100,.3);
+			font-size:170%;
+			line-height:180%;
+			text-align:center;
+			letter-spacing:12px;
+		}
+		.li.hover{
+			background:rgba(1000,1000,0,.5);
+		}
+		.li img{
+			width:156px;
+			height:71px;
+			margin:-8px 0 0 -8px;
+		}
+		.upList{
+			position:absolute;
+			top:5px;
+			left:70px;
+			visibility:hidden;
+		}
+		.downList{
+			position:absolute;
+			top:494px;
+			left:70px;
+			visibility:hidden;
+		}
+		#ifm{
+			width:930px;
+			height:500px;
+			float:left;
+			margin:140px 0px 0px 45px;
+		}
+	</style>
+	<script src="/templatefile/common_res/arttemplate/template-native.js"></script>
+	<script src="/templatefile/common_res/jquery/jquery.min.js"></script>
+	<script>
+        var area=0;
+        var liPos=0;          //数据焦点位置   [0--length]
+        var liPosition=0;     //列表焦点位置   [0--5]
+
+        document.onirkeypress = grabEvent;
+        document.onkeydown = grabEvent;
+        function grabEvent(event){
+            var keyval = event.which;
+            if(area == 1){
+                document.getElementById("ifm").contentWindow.eventHandler(keyval);
+                return false;
+            }
+            switch(keyval){
+                case 39://right
+                    changLR(1);
+                    return false;
+                    break;
+                case 38://up
+                    changUP(-1);
+                    return false;
+                    break;
+                case 40://down
+                    changUP(1);
+                    return false;
+                    break;
+                case 27://esc
+                case 8://back
+                    goback();
+                    return false;
+                    break;
+                case 13://Enter
+                    doSelect();
+                    return false;
+                    break;
+            }
+            return false;
+        }
+
+        var globalData=[];
+        //请求数据接口
+        function initContent(){
+            $.ajax({
+                url : '/Portal/portal/template/getTemplate'+window.location.search,
+                type : 'POST',
+                dataType : 'json',
+                contentType : "application/json",
+                async : false,
+                success : function(data) {
+                    globalData=data =eval(data)[0];
+                    var html = template('template', data);
+                    html = replaceStr(html);
+                    document.getElementById('lifecirclebody').innerHTML = html;
+                },
+                error : function(e) {
+                    console.log(e);
+                }
+            });
+        }
+
+        function replaceStr(str){
+            var html = '';
+            html=str.replace(/&#60;/g, "<");
+            html =html.replace(/&#62;/g, ">");
+            html =html.replace(/&#160;/g, "");
+            html =html.replace(/&#38;/g, "&");
+            html =html.replace(/&#34;/g, "\"");
+            html =html.replace(/&#39;/g, "'");
+            html =html.replace(/&#215;/g, "x");
+            html =html.replace(/&#247;/g, "/");
+            return html;
+        }
+
+        function changUP(num){
+            $(".li:eq("+liPos+")").removeClass("hover");
+            //$(".li:eq("+liPos+")").find("img").attr("src","images/Grade/"+ globalData.categorys[liPos].category_title +".png");
+            if(num<0 && liPos>0){
+
+                if(liPosition>0){
+                    liPos--;
+                    liPosition--;
+                }else{
+                    liPos--;
+                }
+            }else if(num>0 && liPos<globalData.categorys.length-1){
+                if(liPosition<5){
+                    liPos++;
+                    liPosition++;
+                }else{
+                    liPos++;
+                }
+            }
+            $(".li:eq("+liPos+")").addClass("hover");
+            //$(".li:eq("+liPos+")").find("img").attr("src","images/Grade/"+ globalData.categorys[liPos].category_title +"hover.png");
+            goUrl = $(".li:eq("+liPos+")").attr("theUrl");
+            $("iframe").attr("src",goUrl);
+            getList();
+        }
+
+        function changLR(num){
+            if(num>0){
+                var theObj = $(".li:eq("+liPos+")");
+                area = 1;
+                document.getElementById("ifm").contentWindow.getPos();
+            }
+        }
+        function getPos(){
+            if(typeof(sessionStorage.area_sec)!="undefined"){
+                area=parseInt(sessionStorage.area_sec,"10");
+                liPos=parseInt(sessionStorage.liPos_parent_class,"10");
+                delete sessionStorage.area_sec;
+                delete sessionStorage.liPos_parent_class;
+                $(".li:eq("+liPos+")").addClass("hover");
+                //$(".li:eq("+liPos+")").find("img").attr("src","images/Grade/"+ globalData.categorys[liPos].category_title +"hover.png");
+                goUrl = $(".li:eq("+liPos+")").attr("theUrl");
+                $("iframe").attr("src",goUrl);
+                setTimeout(function(){document.getElementById("ifm").contentWindow.getPos()},600)
+            }
+            if(typeof(sessionStorage.liPosition) !="undefined"){
+                liPosition = parseInt(sessionStorage.liPosition,"10");
+                delete sessionStorage.liPosition;
+			}
+            $(".li:eq("+liPos+")").addClass("hover");
+            //$(".li:eq("+liPos+")").find("img").attr("src","images/Grade/"+ globalData.categorys[liPos].category_title +"hover.png");
+        }
+
+        function getList(){
+            //$(".li:eq("+liPos+")").addClass("hover");
+            if(liPosition==0){
+                for(i=0;i<globalData.categorys.length;i++){
+                    if(i<liPos || i>liPos+5){
+                        $(".li:eq("+i+")").css("display","none");
+                    }else{
+                        $(".li:eq("+i+")").css("display","");
+                    }
+                }
+            }else if(liPosition==5){
+                for(i=0;i<globalData.categorys.length;i++){
+                    if(i<liPos-5 || i>liPos){
+                        $(".li:eq("+i+")").css("display","none");
+                    }else{
+                        $(".li:eq("+i+")").css("display","");
+                    }
+                }
+            }else{
+                return;
+            }
+
+            if($(".li:eq("+0+")").css("display")=="none"){
+
+                $(".upList").css("visibility","visible");
+            }else{
+
+                $(".upList").css("visibility","hidden");
+            }
+            if($(".li:eq("+(globalData.categorys.length-1)+")").css("display") == "none"){
+
+                $(".downList").css("visibility","visible");
+            }else{
+                $(".downList").css("visibility","hidden");
+            }
+        }
+
+        $(function(){
+            initContent();
+            getPos();
+            getList();
+        });
+        function goback(){
+            window.location.href = sessionStorage.referUrl;
+        }
+	</script>
+</head>
+<body id="lifecirclebody">
+
+<script id="template" type="text/html">
+	<div class="left">
+		<div class="col">
+			<% for(i=0,l=categorys.length;i<l;i++){%>
+			<div class="li" theUrl="<%=categorys[i].category_src%>">
+				<%=categorys[i].category_title%>
+				<!--<img src='images/Grade/<%=categorys[i].category_title%>.png' />-->
+			</div>
+			<%}%>
+		</div>
+		<div class="arrow upList">
+			<img src="images/up.png" />
+		</div>
+		<div class="arrow downList">
+			<img src="images/down.png" />
+		</div>
+	</div>
+	<iframe id="ifm" src="<%=categorys[0].category_src%>"></iframe>
+</script>
+</body>
+</html>

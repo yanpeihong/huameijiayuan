@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>左右图片分类</title>
+<style>
+*{
+	margin:0px;
+	padding:0px;
+	border:0px;
+	box-sizing:border-box;
+}
+.content{
+	width:880px;
+	height:470px;
+	background-repeat:no-repeat;
+	padding:50px 0px 0px 40px;
+	position:relative;
+}
+.list{
+	width:177px;
+	height:86px;
+	overflow:hidden;
+	float:left;
+	margin:44px 16px;
+}
+.list div.hover{
+	width:178px;
+	height:85px;
+	
+}
+
+.list div{
+	width:155px;
+	height:82px;
+	display:table-cell;
+	vertical-align:middle;
+	}
+.list div img{
+	margin:0px auto;
+	display:block;
+	}
+.list:nth-child(1){
+	margin-left:15px;
+}
+.list:nth-child(5){
+	margin-left:15px;
+}
+
+
+
+</style>
+<script src="/templatefile/common_res/arttemplate/template-native.js"></script>
+<script src="/templatefile/common_res/jquery/jquery.min.js"></script> 
+<script>
+	function eventHandler(keyval){
+		switch(keyval){
+			case 37://left
+				changLR();
+				break;
+			case 38://up
+				changUP(-4);
+				break;
+			case 39://right
+				changUP(1);
+				break;
+			case 40://down
+				changUP(4);
+				break;
+			case 27://esc
+				break;
+			case 8://back
+				parent.goback();
+				break;
+			case 13:
+				doSelect();
+				break;
+		}	
+	}	
+	var area=0;
+	//var columnPos = 0;
+	var liPos=0;
+	var pageNum;
+	var pageNumIndex = 0;
+	var subNum = 8;
+	var totalNum;
+	var hheight;
+	var dateBase;
+	
+
+
+	function changUP(num){
+			
+			if((liPos+num)>8 && pageNumIndex<(pageNum-1)){
+					liPos=liPos+num-subNum;
+					pageNumIndex++;
+					liPos=(pageNumIndex*subNum+liPos)>=totalNum?(totalNum-1-pageNumIndex*subNum):liPos;
+				}else if((liPos+num)<0 && pageNumIndex>0){
+						liPos-=num;
+						pageNumIndex--;
+					}else{
+						$(".list:eq("+liPos+")").find("div").removeClass("hover");
+						liPos+=num;
+						liPos=(pageNumIndex*subNum+liPos)>=totalNum?(totalNum-1-pageNumIndex*subNum):liPos;
+					}
+			getPos();
+		}
+	
+	function getPos(){
+			var base={};
+			base.categorys=database.categorys.slice(subNum*pageNumIndex,subNum*(pageNumIndex+1));
+			var html = template('template', base);
+			html = replaceStr(html);
+			document.getElementById('lifecirclebody').innerHTML = html;
+			if(parent.area!=0){
+				$(".list:eq("+liPos+")").find("img").attr("src","images/classhover_0" +(liPos+1) +".png");
+				$(".list:eq("+liPos+")").find("div").addClass("hover");
+			}
+		}
+	
+	function setPos(){
+		/*
+			liPos_sub_class:子列表焦点位置
+			liPos_parent_class:父列表焦点位置
+			area_sec:区域位置
+		*/
+		if(typeof(sessionStorage.liPos_sub_class)!="undefined"){    
+			liPos = parseInt(sessionStorage.liPos_sub_class,"10");
+			delete sessionStorage.liPos_sub_class;
+		}
+		$(".list:eq("+liPos+")").find("div").addClass("hover");
+	}
+
+	function changLR(){
+		if(liPos%4==0){
+			parent.area = 0;
+			parent.getPos();
+			$(".list:eq("+liPos+")").find("div").removeClass("hover");
+			$(".list:eq("+liPos+")").find("img").attr("src","images/class_0" +(liPos+1) +".png");
+			liPos=0;
+		}else{
+			changUP(-1);
+		}
+	}
+
+	function doSelect(){
+		sessionStorage.area_sec = parent.area;
+		sessionStorage.liPos_parent_class = parent.liPos;
+		//sessionStorage.liPos_sub_class = liPos;
+		sessionStorage.pageNumIndex = pageNumIndex;
+		sessionStorage.liPos_sub = liPos;
+		sessionStorage.subpos01_url= top.location.href;
+        sessionStorage.liPosition = parent.liPosition;
+		var theurl = $(".list:eq("+liPos+")").attr("gourl");
+		top.location.href = theurl;
+	}
+
+//请求数据接口
+function initContent(){
+	$.ajax({
+		url : '/Portal/portal/template/getTemplate'+window.location.search,
+		type : 'POST',
+		dataType : 'json',
+		contentType : "application/json",
+		async : false,
+		success : function(data) {
+			data =eval(data)[0];
+			totalNum = data.categorys.length;
+			database = data;
+			pageNum =  Math.ceil(totalNum/subNum);
+			//getPos(pageNumIndex);
+		},
+		error : function(e) {
+			console.log(e);
+		}
+	});
+}
+
+function replaceStr(str){
+	var html = '';
+	html=str.replace(/&#60;/g, "<");
+	html =html.replace(/&#62;/g, ">");
+	html =html.replace(/&#160;/g, "");
+	html =html.replace(/&#38;/g, "&");
+	html =html.replace(/&#34;/g, "\"");
+	html =html.replace(/&#39;/g, "'");
+	html =html.replace(/&#215;/g, "x");
+	html =html.replace(/&#247;/g, "/");
+	return html;
+}
+
+$(document).ready(function(){
+	//if(typeof(sessionStorage.subpos_de01)!="undefined"){subpos=parseInt(sessionStorage.subpos_de01,"10"); delete sessionStorage.subpos_de01};
+	if(typeof(sessionStorage.pageNumIndex)!="undefined"){pageNumIndex=parseInt(sessionStorage.pageNumIndex,"10"); delete sessionStorage.pageNumIndex};
+	if(sessionStorage.liPos_sub){
+		liPos = sessionStorage.liPos_sub*1;
+		delete sessionStorage.liPos_sub;
+	}
+	initContent();
+	getPos();
+
+});
+
+</script>
+</head>
+<body id="lifecirclebody">
+<script id="template" type="text/html">
+<div class="content">
+	<% for (i=0, l=categorys.length; i<l&&i<8; i++) { %>
+		<div class="list" gourl="<%=categorys[i].category_src%>">
+			<div><img src='images/class_0<%=i+1%>.png' /></div>	
+		</div>
+	<% } %>
+</div>
+
+
+</script>
+</body>
+</html>

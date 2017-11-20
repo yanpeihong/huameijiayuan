@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>图片列表</title>
+<style>
+*{
+	margin:0px;
+	padding:0px;
+	border:0px;
+	box-sizing:border-box;
+}
+.external{
+	width:880px;
+	height:470px;
+	background-repeat:no-repeat;
+	padding:0px 30px 0px 20px;
+	position:relative;
+}
+.list{
+    border-radius: 4px;
+    border: 3px transparent solid;
+	width:160px;
+	height:230px;
+    font-size: 22px;
+	white-space:nowrap;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	float:left;
+}
+.list img{
+	width:160px;
+	height:185px;
+}
+.list .title{
+	width:160px;
+	height:39px;
+	line-height:39px;
+	text-align:center;
+}
+.list.hover{
+	border:3px #FFE400 solid;
+}
+.scroll{
+    width: 6px;
+    background-color: #EEEDED;
+    height: 450px;
+    position: absolute;
+    right: 15px;
+    top: 0px;
+    border-radius: 10px;
+	display:none;
+}
+.anchor{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    background-color: #FF9B00;
+    border-radius: 10px;
+}
+</style>
+<script src="/templatefile/common_res/arttemplate/template-native.js"></script>
+<script src="/templatefile/common_res/jquery/jquery.min.js"></script>
+<script>
+	function eventHandler(keyval){
+		switch(keyval){
+			case 37://left
+				changLR();
+				break;
+			case 38://up
+				changUP(-5);
+				break;
+			case 39://left
+				changUP(1);
+				break;
+			case 40://down
+				changUP(5);
+				break;
+			case 27://esc
+				break;
+			case 8://back
+				parent.goback();
+				break;
+			case 13:
+				doSelect();
+				break;
+		}	
+	}	
+	var area=0;
+	var liPos=0;
+	var pageNum = 1;
+	var subNum = 10;
+	var totalNum;
+	var hheight;
+	function changUP(num){
+		if((liPos+num)>=subNum&&totalNum>subNum&&pageNum*subNum<totalNum){
+			initContent(subNum,++pageNum);
+			if((liPos-num)>=$(".list").length){
+				liPos = $(".list").length - 1;
+			}else{liPos-=num;}			
+			getPos();
+			scrool();
+		}else if((liPos+num)>=-5&&(liPos+num)<0&&pageNum>1){
+			initContent(subNum,--pageNum);
+			liPos-=num;
+			getPos();
+			scrool();
+		}else if((liPos+num)>=0&&(liPos+num)<$(".list").length){
+			$(".list:eq("+liPos+")").removeClass("hover");
+			liPos+=num;
+			getPos();
+		}		
+	}
+	function getPos(){
+		if(typeof(sessionStorage.liPos_dedjzt_list)!="undefined"){
+			liPos = parseInt(sessionStorage.liPos_dedjzt_list,"10");
+			delete sessionStorage.liPos_dedjzt_list;
+		}
+		$(".list:eq("+liPos+")").addClass("hover");
+	}
+	function changLR(){
+		if(liPos%5==0){
+			parent.area = 0;
+			parent.getPos();
+			$(".list:eq("+liPos+")").removeClass("hover");
+			liPos=0;
+		}else{
+			changUP(-1);
+			}
+	}
+	function doSelect(){
+		sessionStorage.area_dedj = parent.area;
+		sessionStorage.liPos_dedjzt = parent.liPos;
+		sessionStorage.liPos_dedjzt_list = liPos;
+		sessionStorage.pageNum_de01 = pageNum;
+		var theurl = $(".list:eq("+liPos+")").attr("gourl");
+		top.location.href = theurl;
+	}
+	
+//请求数据接口
+function initContent(datasize,pageNum){
+	$.ajax({
+		url : '/Portal/portal/template/getTemplate'+window.location.search+"&datasize="+datasize+"&pageNum="+pageNum,
+		type : 'POST',
+		dataType : 'json',
+		contentType : "application/json",
+		async : false,
+		success : function(data) {			
+			data =eval(data)[0];
+			totalNum = data.totalNum;
+			var html = template('template', data);
+			html = replaceStr(html);
+			document.getElementById('lifecirclebody').innerHTML = html;				
+		},
+		error : function(e) {
+			console.log(e);
+		}
+	});
+}
+
+function replaceStr(str){
+	var html = '';
+	html=str.replace(/&#60;/g, "<");
+	html =html.replace(/&#62;/g, ">");
+	html =html.replace(/&#160;/g, "");
+	html =html.replace(/&#38;/g, "&");
+	html =html.replace(/&#34;/g, "\"");
+	html =html.replace(/&#39;/g, "'");
+	html =html.replace(/&#215;/g, "x");
+	html =html.replace(/&#247;/g, "/");
+	return html;
+}
+function scrool(){
+	if(totalNum>subNum){
+		$(".scroll").show();
+		var theheight = $(".scroll").height();		
+		hheight = 1/(Math.ceil(totalNum/subNum))*theheight;
+		var anchor_ = $(".anchor");
+		anchor_.height(hheight);
+		anchor_.css("top",hheight*(pageNum-1));
+	}
+}
+$(document).ready(function(){
+	if(typeof(sessionStorage.subpos_de01)!="undefined"){subpos=parseInt(sessionStorage.subpos_de01,"10"); delete sessionStorage.subpos_de01};
+	if(typeof(sessionStorage.pageNum_de01)!="undefined"){pageNum=parseInt(sessionStorage.pageNum_de01,"10"); delete sessionStorage.pageNum_de01};
+	initContent(subNum,pageNum);
+});
+</script>
+</head>
+<body onLoad="scrool();">
+	<div id="lifecirclebody" >
+	<script id="template" type="text/html">
+		<div class="external" style="">
+				<% for(i=0,l=sources.length;i<l;i++){%>
+					<div class="list" gourl="<%=sources[i].source_src%>">
+						<img src="<%=sources[i].source_img%>"/>
+						<div class="title"><%=sources[i].source_title%></div>
+					</div>
+				<%}%>
+		 </div>
+	 </script>
+     </div>
+	<div class="scroll">
+		<div class="anchor"></div>
+	</div>
+</body>
+</html>
